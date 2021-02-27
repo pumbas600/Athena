@@ -11,12 +11,11 @@ namespace WebApplication.AthenaCore.SQLite.Query.Condition
     public class Condition<TM>
         where TM : BaseModel<TM>, new()
     {
-        //TODO: Condition Groups (brackets)
-        //TODO: In collection Filter
+        //TODO: Joining Predicates (AND / OR Method)
         //TODO: Multiple Values with same ValueName -> Add an incrementing number to end: @id, @id1, @id2, etc
-        
-        
-        public static readonly Dictionary<ExpressionType, string> ConditionalOperators = new ()
+        //TODO: In collection Filter
+
+        private static readonly Dictionary<ExpressionType, string> ConditionalOperators = new ()
         {
             {ExpressionType.Equal, "="},
             {ExpressionType.NotEqual, "!="},
@@ -26,7 +25,7 @@ namespace WebApplication.AthenaCore.SQLite.Query.Condition
             {ExpressionType.GreaterThanOrEqual, ">="}
         };
 
-        public static readonly Dictionary<ExpressionType, string> BooleanOperators = new()
+        private static readonly Dictionary<ExpressionType, string> BooleanOperators = new()
         {
             {ExpressionType.OrElse, "OR"},
             {ExpressionType.AndAlso, "AND"}
@@ -34,8 +33,6 @@ namespace WebApplication.AthenaCore.SQLite.Query.Condition
 
         public StringBuilder ConditionBuilder { get; }
         public Dictionary<string, object> Values { get; }
-
-        private bool isFirstCondition = true;
 
         private Condition()
         {
@@ -46,7 +43,6 @@ namespace WebApplication.AthenaCore.SQLite.Query.Condition
         public static Condition<TM> Equals(TM model)
         {
             var conditon = new Condition<TM>();
-            conditon.AddConjuction(" AND ");
 
             var properties = model.GetAllColumnProperties().ToList();
             for (int i = 0; i < properties.Count; i++)
@@ -57,7 +53,7 @@ namespace WebApplication.AthenaCore.SQLite.Query.Condition
 
                 conditon.Values["@" + name] = value;
                 
-                conditon.ParsePredicate(name, value, ExpressionType.Equal);
+                conditon.FormatPredicate(name, value, ExpressionType.Equal);
                 
                 if (i != properties.Count - 1)
                 {
@@ -70,27 +66,11 @@ namespace WebApplication.AthenaCore.SQLite.Query.Condition
         
         public static Condition<TM> Of(Expression<Predicate<TM>> predicate)
         {
-            var condition = new Condition<TM> { isFirstCondition = false };
+            var condition = new Condition<TM>();
 
             condition.ParsePredicate(predicate);
             return condition;
         }
-
-        // public Condition<TM> And(Expression<Predicate<TM>> condition)
-        // {
-        //     AddConjuction(" AND");
-        //     ParseCondition(condition);
-        //     
-        //     return this;
-        // }
-        //
-        // public Condition<TM> Or(Expression<Predicate<TM>> condition)
-        // {
-        //     AddConjuction(" OR");
-        //     ParseCondition(condition);
-        //
-        //     return this;
-        // }
 
         public string BuildCondition()
         {
@@ -99,7 +79,6 @@ namespace WebApplication.AthenaCore.SQLite.Query.Condition
 
         private void ParsePredicate(Expression<Predicate<TM>> condition)
         {
-
             ParseBinaryExpression(condition.Body as BinaryExpression);
         }
 
@@ -129,9 +108,9 @@ namespace WebApplication.AthenaCore.SQLite.Query.Condition
                 }
                 
                 var column = ((MemberExpression) expression.Left).Member.Name;
-                var value = GetRightValue(expression);
+                var value = GetValue(expression);
 
-                ParsePredicate(column, value, expression.NodeType, isEnclosed);
+                FormatPredicate(column, value, expression.NodeType, isEnclosed);
                 
             }
         }
@@ -151,24 +130,25 @@ namespace WebApplication.AthenaCore.SQLite.Query.Condition
             ConditionBuilder.Append(')');
         }
 
-        private void ParsePredicate(string column, object value, ExpressionType conditionType, bool isEnclosed = false)
+        private void FormatPredicate(string column, object value, ExpressionType conditionType, bool isEnclosed = false)
         {
-            string conditionOperator = null;
+            string conditionOperator;
             if (value.Equals("NULL"))
             {
-                if (conditionType == ExpressionType.Equal)
-                    conditionOperator = "IS";
-                else if (conditionType == ExpressionType.NotEqual)
-                    conditionOperator = "IS NOT";
+                //When dealing with NULL comparisons, use IS/IS NOT rather than =/!=
+                conditionOperator = conditionType == ExpressionType.Equal
+                    ? "IS"
+                    : "IS NOT";
             }
             else conditionOperator = ConditionalOperators[conditionType];
 
+            //If its enclosed, you don't want a space between the column and the '('.
             if (!isEnclosed) ConditionBuilder.Append(' ');
             
             ConditionBuilder.AppendJoin(' ', column, conditionOperator, value);
         }
 
-        private object GetRightValue(BinaryExpression expression)
+        private object GetValue(BinaryExpression expression)
         {
             switch (expression.Right)
             {
@@ -194,18 +174,18 @@ namespace WebApplication.AthenaCore.SQLite.Query.Condition
                     return "NULL";
             }
         }
-
-        private void AddConjuction(string conjuction)
-        {
-            if (!isFirstCondition)
-            {
-                ConditionBuilder.Append(conjuction);
-            }
-            else
-            {
-                isFirstCondition = false;
-            }
-        }
+        
+        // private void AddConjuction(string conjuction)
+        // {
+        //     if (!isFirstCondition)
+        //     {
+        //         ConditionBuilder.Append(conjuction);
+        //     }
+        //     else
+        //     {
+        //         isFirstCondition = false;
+        //     }
+        // }
 
         private static bool IsBooleanOperator(ExpressionType type)
         {
