@@ -17,7 +17,7 @@ namespace WebApplication.AthenaCore.SQLite.Model
             
         }
 
-        public IEnumerable<KeyValuePair<string, object>> AllPropertiesWith(ColumnFlags flag)
+        public IEnumerable<KeyValuePair<string, object>> GetAllPropertiesWith(ColumnFlags flag)
         {
             return GetAllColumnProperties()
                 .Where(p => CreateFilter(p, c => c.HasFlag(flag)))

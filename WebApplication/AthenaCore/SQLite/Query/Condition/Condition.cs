@@ -51,7 +51,7 @@ namespace WebApplication.AthenaCore.SQLite.Query.Condition
                 var name = property.Name;
                 var value = model.GetValue(name);
 
-                conditon.Values["@" + name] = value;
+                conditon.Values.AddQueryValue(name, value);
                 
                 conditon.FormatPredicate(name, value, ExpressionType.Equal);
                 
@@ -157,8 +157,9 @@ namespace WebApplication.AthenaCore.SQLite.Query.Condition
 
                 case MemberExpression memberExpression:
                 {
-                    var valueName = "@" + memberExpression.Member.Name;
+                    var name = memberExpression.Member.Name;
 
+                    //If there is multiple member accessing e.g: user.name.first
                     while (memberExpression.Expression is MemberExpression childMemberExpression)
                     {
                         memberExpression = childMemberExpression;
@@ -166,10 +167,10 @@ namespace WebApplication.AthenaCore.SQLite.Query.Condition
 
                     var value = QueryHelper.FormatValue((memberExpression.Expression as ConstantExpression)?.Value);
 
-                    Values[valueName] = value;
-                    return valueName;
+                    //Returns the keyName
+                    return Values.AddQueryValue(name, value);
                 }
-
+                
                 default:
                     return "NULL";
             }

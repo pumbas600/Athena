@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq.Expressions;
 using WebApplication.AthenaCore.SQLite.Model;
+using WebApplication.AthenaCore.SQLite.Model.Attributes;
 using WebApplication.AthenaCore.SQLite.Query.Condition;
 using WebApplication.AthenaCore.SQLite.Query.QueryStatements;
 using WebApplication.AthenaCore.SQLite.Query.QueryTypes;
@@ -26,6 +27,12 @@ namespace WebApplication
                     .Where(Condition<UserModel>.Of(u =>
                         (u.Id == user.Id || u.Username == user.Username) &&
                         (u.Name != null  || u.Name != "pumbas600")))
+                    .BuildQuery()
+            );
+            
+            Console.WriteLine(
+                InsertQuery<UserModel>.Into("Users")
+                    .Model(user, ColumnFlags.Required)
                     .BuildQuery()
             );
         }

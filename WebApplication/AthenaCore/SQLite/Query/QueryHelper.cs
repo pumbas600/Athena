@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 
 namespace WebApplication.AthenaCore.SQLite.Query
@@ -19,5 +20,20 @@ namespace WebApplication.AthenaCore.SQLite.Query
 
             return memberExpression?.Member.Name;
         }
+
+        public static string AddQueryValue(this Dictionary<string, object> dictionary, string key, object value)
+        {
+            string valueName = "@" + key;
+            dictionary[valueName] = value;
+
+            return valueName;
+        }
+        
+        public static string AddQueryValue(this Dictionary<string, object> dictionary, KeyValuePair<string, object> pair)
+        {
+            return AddQueryValue(dictionary, pair.Key, pair.Value);
+        }
+        
+        
     }
 }
