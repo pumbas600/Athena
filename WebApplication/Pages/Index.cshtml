@@ -1,0 +1,20 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome @Model.Name</h1>
+</div>
+
+<form method="post" asp-page="Index">
+    <span>Hey There, @Model.Username</span> 
+    <div class="form-group">
+        <label>Username</label>
+        <input name="username" class="form-control" placeholder="Enter Name" autocomplete="off"/>
+        <label>Password</label>
+        <input type="password" name="password" class="form-control" placeholder="Enter Password" autocomplete="off"/>
+    </div>
+    <button type="submit" class="btn btn-primary" asp-page-handler="Login">Login</button>
+</form>
