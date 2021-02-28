@@ -30,6 +30,18 @@ namespace WebApplication.AthenaCore.SQLite.Model
                 .Select(p => new KeyValuePair<string, object>(p.Name, QueryHelper.FormatValue(p.GetValue(this))));
         }
 
+        public IEnumerable<string> GetAllPropertyNames()
+        {
+            return GetAllColumnProperties()
+                .Select(p => p.Name);
+        }
+        
+        public IEnumerable<object> GetAllPropertyValues()
+        {
+            return GetAllColumnProperties()
+                .Select(p => QueryHelper.FormatValue(p.GetValue(this)));
+        }
+        
         public IEnumerable<PropertyInfo> GetAllColumnProperties()
         {
             return typeof(T).GetProperties()

@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using WebApplication.AthenaCore.SQLite.Model;
-using WebApplication.AthenaCore.SQLite.Model.Attributes;
 using WebApplication.AthenaCore.SQLite.Query.Condition;
 using WebApplication.AthenaCore.SQLite.Query.QueryStatements;
 using WebApplication.AthenaCore.SQLite.Query.QueryTypes;
@@ -12,11 +12,16 @@ namespace WebApplication
     {
         public static void Main(string[] args)
         {
-            var user = new UserModel();
-            user.Id = 1;
-            var id = 2;
-            //Test(u => (u.Id == id || u.Username == user.Username) && (u != null || u == user) && u.Name == user.Name);
-            SelectUser(user);
+            var user = new UserModel
+            {
+                Id = 1,
+                Username = "pumbas600",
+                Name = "pumbas"
+            };
+            
+            //Test(u => new() { u.Id, u.Name });
+            InsertQuery<UserModel>.Into("Users");
+            //SelectUser(user);
         }
 
         public static void SelectUser(UserModel user)
@@ -31,23 +36,17 @@ namespace WebApplication
             );
             
             Console.WriteLine(
-                InsertQuery<UserModel>.Into("Users")
-                    .Model(user, ColumnFlags.Required)
+                SelectQuery<UserModel>.Of(u => u.Id, u => u.Username)
+                    .From("Users")
+                    .OrderBy(u => u.Id, OrderDirection.Descending)
+                    .Limit(10)
                     .BuildQuery()
             );
         }
 
-        public static void Test(Expression<Predicate<UserModel>> exp)
+        public static void Test(Expression<Func<UserModel, List<object>>> exp)
         {
             var test = exp.Body;
-
-            if (!(exp.Body is MemberExpression body))  
-            {  
-                UnaryExpression ubody = (UnaryExpression)exp.Body;  
-                body = ubody.Operand as MemberExpression;  
-            }
-
-            Console.WriteLine(body.Member.Name);  
         }
 
     }

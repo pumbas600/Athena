@@ -74,7 +74,7 @@ namespace WebApplication.AthenaCore.SQLite.Query.Condition
 
         public string BuildCondition()
         {
-            return ConditionBuilder.ToString();
+            return ConditionBuilder.ToString().Trim();
         }
 
         private void ParsePredicate(Expression<Predicate<TM>> condition)
