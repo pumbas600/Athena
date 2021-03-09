@@ -59,7 +59,7 @@ namespace WebApplication.AthenaCore.SQLite.Query
 
         public static string AddQueryValue(this Dictionary<string, object> dictionary, string key, object value)
         {
-            string valueName = "@" + key;
+            string valueName = "$" + key;
             dictionary[valueName] = value;
 
             return valueName;

@@ -20,8 +20,8 @@ namespace WebApplication
             };
             
             //Test(u => new() { u.Id, u.Name });
-            InsertQuery<UserModel>.Into("Users");
-            //SelectUser(user);
+            //InsertQuery<UserModel>.Into("Users");
+            SelectUser(user);
         }
 
         public static void SelectUser(UserModel user)
@@ -30,8 +30,9 @@ namespace WebApplication
                 SelectQuery<UserModel>.All()
                     .From("Users")
                     .Where(Condition<UserModel>.Of(u =>
-                        (u.Id == user.Id || u.Username == user.Username) &&
-                        (u.Name != null  || u.Name != "pumbas600")))
+                        u.Id == user.Id || u.Username == "pumbas600"))
+                    .OrderBy(u => u.Name)
+                    .Limit(10)
                     .BuildQuery()
             );
             
@@ -40,6 +41,12 @@ namespace WebApplication
                     .From("Users")
                     .OrderBy(u => u.Id, OrderDirection.Descending)
                     .Limit(10)
+                    .BuildQuery()
+            );
+
+            Console.WriteLine(
+                InsertQuery<UserModel>.Into("Users")
+                    .Model(user, true)
                     .BuildQuery()
             );
         }

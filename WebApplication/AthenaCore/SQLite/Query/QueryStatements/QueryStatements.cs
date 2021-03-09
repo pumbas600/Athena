@@ -65,23 +65,23 @@ namespace WebApplication.AthenaCore.SQLite.Query.QueryStatements
             return queryStatement.Query;
         }
 
-        public static TQ Model<TQ, TM>(this IValues<TQ, TM> queryStatement, TM model)
+        public static TQ Model<TQ, TM>(this IValues<TQ, TM> queryStatement, TM model, bool asTemplate = false)
             where TQ : Query<TM>
             where TM : BaseModel<TM>, new()
         {
-            InsertProperties(model.GetAllProperties(), queryStatement.Query);
-            return queryStatement.Query;
-        }
-        
-        public static TQ Model<TQ, TM>(this IValues<TQ, TM> queryStatement, TM model, ColumnFlags flag)
-            where TQ : Query<TM>
-            where TM : BaseModel<TM>, new()
-        {
-            InsertProperties(model.GetAllPropertiesWith(flag), queryStatement.Query);
+            InsertProperties(model.GetAllProperties(), queryStatement.Query, asTemplate);
             return queryStatement.Query;
         }
 
-        private static void InsertProperties<TM>(IEnumerable<KeyValuePair<string, object>> properties, Query<TM> query)
+        public static TQ Model<TQ, TM>(this IValues<TQ, TM> queryStatement, TM model, ColumnFlags flag, bool asTemplate = false)
+            where TQ : Query<TM>
+            where TM : BaseModel<TM>, new()
+        {
+            InsertProperties(model.GetAllPropertiesWith(flag), queryStatement.Query, asTemplate);
+            return queryStatement.Query;
+        }
+
+        private static void InsertProperties<TM>(IEnumerable<KeyValuePair<string, object>> properties, Query<TM> query, bool asTemplate)
             where TM : BaseModel<TM>, new()
         {
             var columns = new List<string>();
@@ -90,7 +90,7 @@ namespace WebApplication.AthenaCore.SQLite.Query.QueryStatements
             properties.ForEach(p =>
             {
                 columns.Add(p.Key);
-                values.Add(query.Values.AddQueryValue(p));
+                values.Add(query.Values.AddQueryValue(p.Key, asTemplate ? null : p.Value));
             });
             
             query.SetClauseValue("columns", string.Join(", ", columns));

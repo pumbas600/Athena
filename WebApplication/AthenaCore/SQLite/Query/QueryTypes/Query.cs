@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Text.RegularExpressions;
-using WebApplication.AthenaCore.Extensions;
+using Microsoft.Data.Sqlite;
 using WebApplication.AthenaCore.SQLite.Model;
 using WebApplication.AthenaCore.SQLite.Query.Exceptions;
 
@@ -14,9 +16,10 @@ namespace WebApplication.AthenaCore.SQLite.Query.QueryTypes
         //TODO: ClauseData with no clause e.g: <columns> for an insert statement
         
         private static Regex ClauseRegex { get; } =
-            new (@"(?:(?<clause>[A-Z]+ ?)+(?:\s*)<(?<clausekey>[a-z]+)+>)+", RegexOptions.Compiled);
+            new (@"(?:(?<clause>[A-Z]+\s*?)+(?:\s*)<(?<clausekey>[a-z]+)+>)+|(?:<(?<clausekey>[a-z]+)+>)|(?:\{(?<clause>[A-Z]+\s*?)+\})",
+                RegexOptions.Compiled);
 
-        private static Regex ClauseSpecialCharactersRegex { get; } = new(@"[\[\]]|\| ", RegexOptions.Compiled);
+        private static Regex ClauseSpecialCharactersRegex { get; } = new(@"[\[\]\{\}]|\| ", RegexOptions.Compiled);
         
         public QueryType QueryType { get; }
         public Dictionary<string, object> Values { get; }
@@ -48,7 +51,7 @@ namespace WebApplication.AthenaCore.SQLite.Query.QueryTypes
             ClauseData = new Dictionary<string, ClauseData>();
             
             ParseQuery();
-            ClauseData.Values.ForEach(Console.WriteLine);
+            //ClauseData.Values.ForEach(Console.WriteLine);
         }
 
         public void SetClauseValue(string clauseKey, object clauseValue)
@@ -96,12 +99,14 @@ namespace WebApplication.AthenaCore.SQLite.Query.QueryTypes
             
             foreach (Match match in ClauseRegex.Matches(clauses))
             {
+                //TODO: What if there is no clausekey (Only clauses?) -> Also update ClauseData.cs
                 var clauseKey = match.Groups["clausekey"].Value;
-                var clause = string.Join(" ", match.Groups["clause"].Captures
+                var clause = string.Join(" ",  match.Groups["clause"].Captures
                     .ToList()
                     .Select(c => c.Value.TrimEnd()));
-
-                ClauseData[clauseKey] = new ClauseData(clause, clauseKey, isOptional);
+                
+                if (!string.IsNullOrEmpty(clauseKey))
+                    ClauseData[clauseKey] = new ClauseData(clause, clauseKey, isOptional);
 
                 HandleConditionalClauses(clauses, endOfLastGroupIndex, match.Index, 
                     previousClauseKey, clauseKey, ref conditionalClauses);
@@ -143,7 +148,7 @@ namespace WebApplication.AthenaCore.SQLite.Query.QueryTypes
 
         public string BuildQuery()
         {
-            //Remove '[', ']' and '| '.
+            //Remove '[', ']', '{', '}' and '| '.
             string query = ClauseSpecialCharactersRegex.Replace(QueryFormat, "");
 
             foreach (var clauseData in ClauseData.Values)
@@ -169,6 +174,25 @@ namespace WebApplication.AthenaCore.SQLite.Query.QueryTypes
             }
 
             return query;
+        }
+
+        public DataTable ExecuteQuery(string databaseName)
+        {
+            if (!databaseName.EndsWith(".db")) databaseName += ".db";
+
+            using var connection = new SqliteConnection($"Data source={databaseName}");
+            
+            var command = connection.CreateCommand();
+            command.CommandText = BuildQuery();
+
+            foreach (var (key, value) in Values)
+            {
+                command.Parameters.AddWithValue(key, value);
+            }
+
+            var datatable = new DataTable();
+            datatable.Load(command.ExecuteReader());
+            return datatable;
         }
     }
 }

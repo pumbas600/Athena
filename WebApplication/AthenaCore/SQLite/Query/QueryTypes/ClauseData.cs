@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace WebApplication.AthenaCore.SQLite.Query.QueryTypes
 {
@@ -19,11 +20,15 @@ namespace WebApplication.AthenaCore.SQLite.Query.QueryTypes
         //The value which will replace the clause key
         public object ClauseValue { get; set; }
         
+        //If this has a clause value, or if its just a clause
+        public bool HasClauseValue { get; }
+        
         public ClauseData(string clause, string clauseKey, bool isOptional)
         {
             Clause = clause;
             ClauseKey = clauseKey;
             IsOptional = isOptional;
+            HasClauseValue = !string.IsNullOrEmpty(clause);
         }
 
         public override string ToString()
@@ -33,8 +38,7 @@ namespace WebApplication.AthenaCore.SQLite.Query.QueryTypes
             {
                 conditionalClauses = GetFormattedConditionalClauses();
             }
-
-            return $"{Clause} <{ClauseKey}> [{IsOptional},({conditionalClauses})]";
+            return $"{Clause} <{ClauseKey}> [Is Optional: {IsOptional}, ({conditionalClauses})]";
         }
 
         public string GetFormattedConditionalClauses()
@@ -44,7 +48,7 @@ namespace WebApplication.AthenaCore.SQLite.Query.QueryTypes
 
         public string GetRegexClauseReplace()
         {
-            return $@"{Clause}\s*<{ClauseKey}>\s*";
+            return HasClauseValue ? $@"{Clause}\s*<{ClauseKey}>\s*" : $@"<{ClauseKey}>\s*";
         }
         
         public string GetFormattedKey()
